@@ -18,11 +18,13 @@ Board::Board(){
             piece_array[i][j] = temp;
         }
     }
-
+    white_black_turn = true; // always white's turn first
     init_board();
 }
 
 void Board::init_board() {
+
+
     //w for white b for black ks for kingside qs for queenside
     //i is == to the row and j is == to the column
     //so basically if its row 0 thats black major pieces and row 7 is whites major pieces
@@ -82,13 +84,51 @@ void Board::print_board(){
         for(int j = 0; j < max_y; j++){
         Piece temp = get_piece(i,j);
         char temp2 = temp.get_name();
-        cout << temp2 << " ";
+        char temp_color = temp.get_color();
+        if(temp_color == 'w' or temp_color == 'b'){
+            cout << temp_color <<temp2 << " ";
+        }
+        else{
+            cout << temp2 << "  ";
+        }
+
     }
     cout << endl;
 }
 }
+//this takes a chr and subtracts it by the ascii value for 'a' in order to convert the 'a' -> 0 which
+//fits in the bounds of our 2d matrix// we then do 7- that value because our 2d matrix holds 0-7 going down
+//and the inputted values have 0-7 going upwards
+int char_to_x_value(char chr) {
+    //turning a char into an integer
+    int int_from_ascii = chr - 97;
+    //flipping it so 0 -> 7 and vice versa
+    int retval = int_from_ascii;
 
-bool Board::swap_pieces(int x1, int y1, int x2, int y2) {
+    return retval;
+}
+//our 2d matrix that holds all the pieces has a range [0->7 going downwards][0->7 going upwards
+//people input chess moves as a char followed by a number and the number is what this function is for
+//they enter a number 1-8 1 on the bottom and 8 on the top which is the opposite of what ours does
+//we add by 1 to get it to the 0-7 scale then do 7 - the value to get the reversed value
+int flip_integer(int y_value){
+    return 7 - y_value + 1;
+}
+//function that switches the pieces on the chess board - main part of the functionality
+bool Board::swap_pieces(char x1_input, int y1_input, char x2_input, int y2_input) {
+    // our input values are going to be like d2 d4 where the letters correspond to our y values
+    // and our ints correspond to our x values.
+    //these take our y values (ints from 1->8) and converts them into something better for our matrix(7->0)
+    int x1 = flip_integer(y1_input);
+    int x2 = flip_integer(y2_input);
+    //these take our x values (chars from a->h) and converts them into something better for our matrix(h->a)
+    int y1 = char_to_x_value(x1_input);
+    int y2 = char_to_x_value(x2_input);
+    //note we had to flip these values because chess notation goes low on the board on the left has low values and
+    //our 2d matrix has low on the board on the right having higher values
+
+    cout << x1 << " " << y1 << " " << x2 << " " << y2 << endl;
+
     //first make sure either piece is not out of bounds
     if(x1 < 0 or y1 < 0 or x2 < 0 or y2 < 0 or x1 >= max_x or x2 >= max_x or y1 >= max_y or y2 >= max_y){
         cout << "Out of bounds" << endl;
@@ -194,16 +234,12 @@ bool Board::valid_move(Piece initial_location, Piece destination_location) {
         //the else if statement handles the cases were you go left 2 and right 2 then up 1 and down 1
         for(int i = -2; i <5;i = i + 4){
             for(int j = -1; j < 2; j = j + 2){
-                //cout << i << " " << j << endl;
                 if((initial_x == (destination_x + i)) and (initial_y == (destination_y + j))){
-                    //cout << "retval" << retVal << endl;
                     retVal = true;
                 }
                 else if((initial_x == destination_x + j) and (initial_y == destination_y + i)){
                     retVal = true;
-
                 }
-
             }
         }
     }
@@ -213,7 +249,7 @@ bool Board::valid_move(Piece initial_location, Piece destination_location) {
         for(int i = 1; i < 9; i++){
             //this code goes in a diagonal by always adding x and y by i or subtracting x and y by i
             //checks both diagonals max distance being 8
-            //this code will be re used for the queen might move to helper function
+            //this code will be re used for the queen might mo  ve to helper function
             if((initial_x == destination_x + i) and (initial_y == destination_y + i)){
                 retVal = true;
             }

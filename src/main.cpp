@@ -20,7 +20,8 @@ int main() {
     //testing loop to check swapping
     while(true){
         cout << "Enter in 2 pairs" << endl;
-        int x1, y1, x2, y2;
+        char x1, x2;
+        int y1, y2;
         cin >> x1 >> y1 >> x2 >> y2;
         if(x1 == 5 and x2 == 5 and y1 == 5 and y2 == 5){
             break;
