@@ -18,6 +18,7 @@ int main() {
     board.print_board();
 
     //testing loop to check swapping
+    //now can enter in chess annotation
     while(true){
         cout << "Enter in 2 pairs" << endl;
         char x1, x2;
