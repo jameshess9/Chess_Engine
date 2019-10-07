@@ -14,7 +14,7 @@ int main() {
 
     //the game loop
     while(true){
-        cout << board.get_turn() << endl;
+        board.check_for_checks();
         cout << "Enter in 2 pairs" << endl;
         char x1, x2;
         int y1, y2;

@@ -69,6 +69,14 @@ void Board::init_board() {
     Piece b_ks_Rook(0,7,'b','R');
     piece_array[0][7] = b_ks_Rook;
 
+    //prev_moved_piece needs to be initialized to something and this knight will never be able to check the king
+    //on the first move. We must initialize it because looking for checks is called before the first swapping
+    //of pieces happens
+    prev_moved_piece = b_ks_Knight;
+    //set the king locations
+    white_king = w_King;
+    black_king = b_King;
+
     for(int i = 0; i < 2; i++){
         for(int j = 0; j < 8; j++){
             if(i == 0){
@@ -153,9 +161,18 @@ bool Board::swap_pieces(char x1_input, int y1_input, char x2_input, int y2_input
 
     /*
      * Have to implement something here to deal with the fact that pawns capture in different directions
+     * Also have to implement something to see if this move makes you go from being in check to not being in check
+     * creating a new board copying everything over making the move and then checking for checks seems too costly
+     * issue is that if the second piece is a piece we clear it out and then swap with the cleared piece
+     * can create a temporary piece equal to the piece that we cleared out and undo swapping if still in check
      */
 
+    //we store this temporary piece in case the baord is still in check after the move therefore making it an invalid move
+    Piece temporary_piece = second_piece;
+
     if(validMove){
+
+
         //if the second piece is a real piece
         if(second_piece.get_name() != '0'){
             //if they are the same color return false to being able to swap
@@ -188,9 +205,58 @@ bool Board::swap_pieces(char x1_input, int y1_input, char x2_input, int y2_input
         //push updated pieces back into array
         piece_array[first_piece.get_x_location()][first_piece.get_y_location()] = first_piece;
         piece_array[second_piece.get_x_location()][second_piece.get_y_location()] = second_piece;
+        //second_piece is the piece that was just moved
+        //the if statement is for if the board is in check
+        //we will want to recall check_for_checks given the same piece in storage after black makes its move
+        //so we do not want to alter prev_moved_piece if the board is in check
+        if(!in_check) {
+            prev_moved_piece = second_piece;
+        }
         swap_turn();
     }
+    //here is where we will deal with the case of board being in check
+    if(in_check){
+        //so the board was in check before this move so if we have no checks now we are good
+        //white makes a move to put black in check -> new iteration of while loop
+        //current_turn = black black then makes a move which will make current_turn = white
+        //issue is that check_for_checks looks for the prev piece -> resolved
+        //so prev_moved_piece will be = to the white piece that put black in check
+        //prev_moved piece is white and the current turn is white which seems like it would be correct
+        //but in most cases you will be checking for checks on the wrong turn so check_for_checks
+        //initially swaps turns so we have to swap turns first here to offset that;
+        /*bugs:
+         * rules will be changed and not changed back
+         * if we make a move that doesnt put us out of check it prints that we must make another move but board
+         * print shows the move
+         */
+        swap_turn();
+        bool still_in_check = check_for_checks();
+        if(!still_in_check){
+            //not in check anymore we are good
+            //swap back to the correct turn and continue the game
+            swap_turn();
+            in_check = false;
+            prev_moved_piece = second_piece;
 
+        }
+        else{
+            //this is an issue our previous move does not work must "reset" the move
+            //we already swapped the turn once so its already swapped back now we just need to reset the pieces
+            //currently all of first pieces info is stored  in second piece and second piece is stored in temporary_piece
+            first_piece.set_color(second_piece.get_color());
+            first_piece.set_name(second_piece.get_name());
+            //first piece is set back time to set back the second piece
+            //important here to make sure we set second_pieces values to temps values
+            second_piece = temporary_piece;
+
+            cout << "You must make a move to get out of check" << endl;
+            //push the pieces back to the array
+            piece_array[first_piece.get_x_location()][first_piece.get_y_location()] = first_piece;
+            piece_array[second_piece.get_x_location()][second_piece.get_y_location()] = second_piece;
+            return false;
+        }
+
+    }
     return validMove;
 
 }
@@ -361,11 +427,59 @@ bool Board::valid_move(Piece initial_location, Piece destination_location) {
     }
     //rejected by if statement
     //or its an empty space and retVal was initialized to false so just return retVal
-    if(!retVal){
-        cout << "Invalid Move" << endl;
+
+    //if(!retVal){
+        //cout << "Invalid Move" << endl;
+    //}
+    //else{
+        //cout << "Valid Move" << endl;
+    //}
+    return retVal;
+}
+bool Board::check_for_checks() {
+    //so this function is going to be called at the beginning of a turn to look and see if there are any checks
+    //in the given position. We first need to find out whos turn it is, then we must find where their king is
+    //and then we must find if any of the pieces have a valid move to the king
+
+    //returns true if in check returns false otherwise
+
+    //attempted implementing this without scanning through all the pieces but kept getting bugs
+    //we must scan through all of the pieces and make sure that none of them have a valid move on the king
+
+    //1. We must find out which king is in danger
+    //2. For every piece in piece_array if that piece is equal to the opposite color see if it has a valid move
+    //3. if any of the pieces have a check return true;
+
+    //set king equal to the current players king
+    Piece king;
+    if(current_turn){
+        king = white_king;
     }
     else{
-        cout << "Valid Move" << endl;
+        king = black_king;
     }
-    return retVal;
+    //this is to prepare for our for loop we will be checking to see if the opposite player can make moves
+    //and with how our valid_move function is implemented we must temporarily switch to the other players move
+    swap_turn();
+    //hard coded 64 could change
+    for(int i = 0; i < 8; i++){
+        for(int j = 0; j < 8; j++){
+            if(piece_array[i][j].get_color() != king.get_color()){
+                //so these pieces are threats to the king must check for every valid move
+                if(valid_move(piece_array[i][j],king)){
+                    //this piece can attack the king
+                    //swap back turns and return false;
+                    cout << "In check" << endl;
+                    swap_turn();
+                    in_check = true;
+                    return true;
+                }
+            }
+        }
+    }
+    //no pieces can attack the king
+    swap_turn();
+    in_check = false;
+    return false;
+
 }
