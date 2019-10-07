@@ -15,6 +15,7 @@ private:
     static int const max_y{8};
     bool current_turn;
     bool in_check;
+    bool checkmate;
     Piece white_king;
     Piece black_king;
     Piece prev_moved_piece;
@@ -36,9 +37,9 @@ public:
     bool check_for_checkmate();
     bool check_for_pieces_inbetween(Piece moving_piece,Piece destination);
 
-
     Piece get_piece(int x,int y){return piece_array[x][y];}
     bool get_turn(){ return current_turn;}
+    bool get_checkmate(){ return checkmate;}
 
 
 };

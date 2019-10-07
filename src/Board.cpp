@@ -19,6 +19,7 @@ Board::Board(){
         }
     }
     current_turn = 'w'; // always white's turn first
+    checkmate = false;
     init_board();
 }
 
@@ -125,7 +126,7 @@ bool Board::swap_pieces(int x1, int y1, int x2, int y2) {
 
     //we now have to make sure that our initial piece is a piece that can move and not an empty space
     if(first_piece.get_name() == '0'){
-        cout << "You can't move a space" << endl;
+        //cout << "You can't move a space" << endl;
         return false;
     }
 
@@ -145,8 +146,21 @@ bool Board::swap_pieces(int x1, int y1, int x2, int y2) {
      */
 
     //we store this temporary piece in case the baord is still in check after the move therefore making it an invalid move
-    Piece temporary_piece = second_piece;
+    Piece temporary_piece = Piece(second_piece.get_x_location(),second_piece.get_y_location(),second_piece.get_color(),second_piece.get_name());
 
+
+    //this king is stored in case a king is moved and then needs to be put back
+    Piece temp_king = Piece(-1,-1,'e','0');
+    if(first_piece.get_name() == 'K' or second_piece.get_name() == 'K'){
+        if(first_piece.get_color() == 'w' or second_piece.get_color() == 'b'){
+            temp_king = black_king;
+            black_king = second_piece;
+        }
+        else{
+            temp_king = white_king;
+            white_king = second_piece;
+        }
+    }
     if(validMove){
 
 
@@ -182,6 +196,8 @@ bool Board::swap_pieces(int x1, int y1, int x2, int y2) {
         //push updated pieces back into array
         piece_array[first_piece.get_x_location()][first_piece.get_y_location()] = first_piece;
         piece_array[second_piece.get_x_location()][second_piece.get_y_location()] = second_piece;
+
+
         //second_piece is the piece that was just moved
         //the if statement is for if the board is in check
         //we will want to recall check_for_checks given the same piece in storage after black makes its move
@@ -220,11 +236,22 @@ bool Board::swap_pieces(int x1, int y1, int x2, int y2) {
             //this is an issue our previous move does not work must "reset" the move
             //we already swapped the turn once so its already swapped back now we just need to reset the pieces
             //currently all of first pieces info is stored  in second piece and second piece is stored in temporary_piece
+
+            if(temp_king.get_name() == 'K'){
+                if(temp_king.get_color() == 'b'){
+                    black_king = temp_king;
+                }
+                else{
+                    white_king = temp_king;
+                }
+            }
+
             first_piece.set_color(second_piece.get_color());
             first_piece.set_name(second_piece.get_name());
             //first piece is set back time to set back the second piece
             //important here to make sure we set second_pieces values to temps values
-            second_piece = temporary_piece;
+            second_piece.set_color(temporary_piece.get_color());
+            second_piece.set_name(temporary_piece.get_name());
 
             cout << "You must make a move to get out of check" << endl;
             //push the pieces back to the array
@@ -443,15 +470,17 @@ bool Board::check_for_checks() {
         for(int j = 0; j < 8; j++){
             if(piece_array[i][j].get_color() != king.get_color()){
                 //so these pieces are threats to the king must check for every valid move
-                if(valid_move(piece_array[i][j],king)){
-                    //this piece can attack the king
-                    //swap back turns and return false;
-                    cout << "In check" << endl;
-                    swap_turn();
-                    in_check = true;
-                    //before we continue the game we must make sure that there is a move available to continue the game
-                    check_for_checkmate();
-                    return true;
+                if(valid_move(piece_array[i][j],king)) {
+                    if (check_for_pieces_inbetween(piece_array[i][j], king)) {
+                        //this piece can attack the king
+                        //swap back turns and return false;
+                        cout << "In check" << endl;
+
+                        in_check = true;
+
+                        swap_turn();
+                        return true;
+                    }
                 }
             }
         }
@@ -478,6 +507,9 @@ bool Board::check_for_checkmate() {
      * 5.a if true restore piece_array and return false - there is no checkmate
      * 5.b if false continue looking
      */
+    //we must temporarily swap turns in order to check if the other player can take the current players pieces
+
+
     Piece king;
     if(current_turn){
         king = white_king;
@@ -500,27 +532,6 @@ bool Board::check_for_checkmate() {
     }
     //now we can call swap_pieces and if it returns true we know it's not in check mate
     //kings movement
-    for(int x = -1; x < 2; x++){
-        for(int y = -1; y < 2; y++){
-            // -1,-1  -1,0  -1,1  0,-1  0,0  0,1  1,-1  1,0  1,1
-            //all of the possible king moves by adding x + x and y + y
-
-            //this will call swap_pieces for every possible king move
-            //if this returns true than we are not in checkmate
-            bool can_move = swap_pieces(king.get_x_location(),king.get_y_location(),king.get_x_location()+ x,king.get_y_location() + y);
-            if(can_move){
-                //there is at least one possible move
-                //set piece_array back to normal and then return false;
-                for(int i = 0; i < 8; i++){
-                    for(int j = 0; j < 8; j++){
-                        piece_array[i][j] = temp_piece_array[i][j];
-                    }
-                }
-                cout << "move possible" << endl;
-                return false;
-            }
-        }
-    }
 
     //so our code has checked to see if the king can move now we are in a situation where the king can't move
     //the next most frequent way to get out of check is to capture the piece that put you in check
@@ -530,6 +541,8 @@ bool Board::check_for_checkmate() {
 
     //we know that the king has the color of the player whos pieces we need to check
     char cur_color = king.get_color();
+
+
     for(int i = 0; i < 8; i++){
         for(int j = 0; j < 8; j++){
             if(piece_array[i][j].get_color() == cur_color){
@@ -539,23 +552,31 @@ bool Board::check_for_checkmate() {
                 //and if its a valid move attempt to swap 8*8*8*8 iterations so it would run over 4000 times
                 //might be realistic because move of the iterations will just end instantly and swapping has no loops
                 //temporary solution -> will look to improve eventually
-
                 for(int x = 0; x < 8; x++){
                     for(int y = 0; y < 8; y++) {
                         //Piece at i,j is the piece that can possible move
                         //Piece at x,y is the possible location that piece at i,j can move to
+
                         bool valid_move_or_not = swap_pieces(i,j,x,y);
                         if(valid_move_or_not){
-                            //this is a valid move that gets rid of check
-                            //restore piece_array and return false
-                            for(int i = 0; i < 8; i++){
-                                for(int j = 0; j < 8; j++){
-                                    piece_array[i][j] = temp_piece_array[i][j];
+                            cout << "valid move with a valid piece" << endl;
+                            //this is a valid move that doesn't neccesarily mean we are out of check
+                            //swap back to the correct turn
+                            cout << i << " " << j << " " << x << " " << y << " " <<endl;
+                            Piece test_i = get_piece(i,j);
+                            Piece test_d = get_piece(x,y);
+                            cout << test_i.get_color() << " " << test_d.get_color() << endl;
+                            cout << white_king.get_x_location() << " " << white_king.get_y_location() << endl;
+                            swap_turn();
+                            if(!check_for_checks()){
+                                for(int a = 0; i < 8; i++){
+                                    for(int b = 0; j < 8; j++){
+                                        piece_array[a][b] = temp_piece_array[a][b];
+                                    }
                                 }
+                                cout << "move possible-not king" << endl;
+                                return false;
                             }
-                            cout << "move possible-not king" << endl;
-
-                            return false;
                         }
                     }
                 }
@@ -564,6 +585,8 @@ bool Board::check_for_checkmate() {
         }
     }
     cout << "checkmate" << endl;
+    checkmate = true;
+    swap_turn();
     return true;
 }
 
@@ -574,6 +597,8 @@ bool Board::check_for_pieces_inbetween(Piece moving_piece,Piece destination) {
         //kings can't move enough squares to attempt to jump over a piece
         return true;
     }
+    //we added this variable because all of our function calls will update the turn and cause errors
+
     //so what we want to do is get the x values for both and the y values from both and loop between them
     int initial_x = moving_piece.get_x_location();
     int initial_y = moving_piece.get_y_location();
@@ -642,29 +667,43 @@ bool Board::check_for_pieces_inbetween(Piece moving_piece,Piece destination) {
         //of the 2 pieces are the same it wont run the loops
         //this loop runs between the initial piece to the destination piece incrementing and decrementing when neccesary
         //this will start at the piece right after inital and stop when we get to our destination piece
+        if(initial_x > destination_x){
+            initial_x = initial_x - 1;
+        }
+        else{
+            initial_x = initial_x + 1;
+        }
+
+        if(initial_y > destination_y){
+            initial_y = initial_y - 1;
+        }
+        else{
+            initial_y = initial_y + 1;
+        }
         while(initial_x != destination_x){
             //have to increase or decrease x depending on which direction we have to go
             //we do this here because we have to increment it up or down one before we go into the next loop
+
+
+            Piece test_piece = get_piece(initial_x,initial_y);
+            cout << test_piece.get_color() << " " << initial_x << " " << initial_y <<endl;
+            if (test_piece.get_name() != '0') {
+                cout << "Piece in between" << endl;
+                return false;
+            }
+            //update loop values
             if(initial_x > destination_x){
                 initial_x = initial_x - 1;
             }
             else{
                 initial_x = initial_x + 1;
             }
-            while(initial_y != destination_y){
-                if(initial_y > destination_y){
-                    initial_y = initial_y - 1;
-                }
-                else{
-                    initial_y = initial_y + 1;
-                }
-                //we now have a location of an in between piece
-                Piece test_piece = get_piece(initial_x,initial_y);
-                cout << test_piece.get_name() << " " << initial_x << " " << initial_y <<endl;
-                if (test_piece.get_name() != '0') {
-                    cout << "Piece in between" << endl;
-                    return false;
-                }
+
+            if(initial_y > destination_y){
+                initial_y = initial_y - 1;
+            }
+            else{
+                initial_y = initial_y + 1;
             }
 
         }
@@ -672,6 +711,5 @@ bool Board::check_for_pieces_inbetween(Piece moving_piece,Piece destination) {
     }
 
     //no pieces in between you're good
-
     return true;
 }

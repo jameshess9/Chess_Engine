@@ -33,7 +33,13 @@ int main() {
 
     //the game loop
     while(true){
-        //board.check_for_checks();
+        bool in_check = board.check_for_checks();
+        if(in_check){
+            bool check_mate = board.check_for_checkmate();
+            if(check_mate){
+                break;
+            }
+        }
         cout << "Enter in 2 pairs" << endl;
         char input_x1, input_x2;
         int input_y1, input_y2;
