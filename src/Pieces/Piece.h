@@ -30,6 +30,7 @@ public:
     void set_pawn_rule(bool updated_rule);
     void set_castling_rule(bool updated_rule);
 
+
     int get_x_location() {return x_location;}
     int get_y_location() {return y_location;}
     char get_color() {return color;}

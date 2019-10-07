@@ -8,18 +8,13 @@
 using namespace std;
 
 int main() {
-    int x = 0;
-    int y = 0;
-    char cur_color = 'w';
-    Piece wPiece(x, y, cur_color,'p');
-    Piece wKnight(x,y,cur_color,'n');
-
+    //initialize the board to play and print it to the player
     Board board;
     board.print_board();
 
-    //testing loop to check swapping
-    //now can enter in chess annotation
+    //the game loop
     while(true){
+        cout << board.get_turn() << endl;
         cout << "Enter in 2 pairs" << endl;
         char x1, x2;
         int y1, y2;
@@ -29,6 +24,8 @@ int main() {
         }
         bool test_bool = board.swap_pieces(x1,y1,x2,y2);
         board.print_board();
+
+
     }
 
     return 0;

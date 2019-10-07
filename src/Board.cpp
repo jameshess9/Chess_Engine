@@ -18,10 +18,13 @@ Board::Board(){
             piece_array[i][j] = temp;
         }
     }
-    white_black_turn = true; // always white's turn first
+    current_turn = 'w'; // always white's turn first
     init_board();
 }
 
+void Board::swap_turn() {
+    current_turn = !current_turn;
+}
 void Board::init_board() {
 
 
@@ -79,6 +82,7 @@ void Board::init_board() {
         }
     }
 }
+
 void Board::print_board(){
     for(int i = 0; i < max_x; i++){
         for(int j = 0; j < max_y; j++){
@@ -127,7 +131,7 @@ bool Board::swap_pieces(char x1_input, int y1_input, char x2_input, int y2_input
     //note we had to flip these values because chess notation goes low on the board on the left has low values and
     //our 2d matrix has low on the board on the right having higher values
 
-    cout << x1 << " " << y1 << " " << x2 << " " << y2 << endl;
+    //cout << x1 << " " << y1 << " " << x2 << " " << y2 << endl;
 
     //first make sure either piece is not out of bounds
     if(x1 < 0 or y1 < 0 or x2 < 0 or y2 < 0 or x1 >= max_x or x2 >= max_x or y1 >= max_y or y2 >= max_y){
@@ -184,7 +188,7 @@ bool Board::swap_pieces(char x1_input, int y1_input, char x2_input, int y2_input
         //push updated pieces back into array
         piece_array[first_piece.get_x_location()][first_piece.get_y_location()] = first_piece;
         piece_array[second_piece.get_x_location()][second_piece.get_y_location()] = second_piece;
-
+        swap_turn();
     }
 
     return validMove;
@@ -192,6 +196,20 @@ bool Board::swap_pieces(char x1_input, int y1_input, char x2_input, int y2_input
 }
 
 bool Board::valid_move(Piece initial_location, Piece destination_location) {
+    //only the person who's move it is can move a piece
+    //current turn = true means it is whites turn
+    if(current_turn){
+        if(initial_location.get_color() == 'b'){
+            cout << "It's not your turn" << endl;
+            return false;
+        }
+    }
+    else{
+        if(initial_location.get_color() == 'w'){
+            cout << "It's not your turn" << endl;
+            return false;
+        }
+    }
 
     //get location as 2 ints per piece = 4 total
     int initial_x = initial_location.get_x_location();
