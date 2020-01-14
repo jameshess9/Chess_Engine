@@ -295,7 +295,14 @@ bool Board::valid_move(Piece initial_location, Piece destination_location) {
         if(initial_location.get_color() == 'w') {
             bool moveForwardOne = (initial_x == destination_x + 1) and (initial_y == destination_y);
             bool moveForwardTwo = false;
-            if(initial_location.get_pawn_rule()){
+            Piece isItaCapture;
+            isItaCapture = get_piece(destination_x,destination_y);
+
+            if(isItaCapture.get_color() == 'b') {
+                moveForwardOne = (initial_x == destination_x + 1) and (initial_y == destination_y - 1);
+                moveForwardTwo = (initial_x == destination_x + 1) and (initial_y == destination_y + 1);
+            }
+            else if(initial_location.get_pawn_rule()){
                 moveForwardTwo = (initial_x == destination_x + 2) and (initial_y == destination_y);
             }
             if (moveForwardOne or moveForwardTwo) {
@@ -305,9 +312,18 @@ bool Board::valid_move(Piece initial_location, Piece destination_location) {
         else{
             bool moveForwardOne = (initial_x == destination_x - 1) and (initial_y == destination_y);
             bool moveForwardTwo = false;
-            if (initial_location.get_pawn_rule()) {
+            Piece isItaCapture;
+            isItaCapture = get_piece(destination_x,destination_y);
+
+            if(isItaCapture.get_color() == 'w') {
+                moveForwardOne = (initial_x == destination_x + 1) and (initial_y == destination_y - 1);
+                moveForwardTwo = (initial_x == destination_x + 1) and (initial_y == destination_y + 1);
+            }
+
+            else if (initial_location.get_pawn_rule()) {
                 moveForwardTwo = (initial_x == destination_x - 2) and (initial_y == destination_y);
             }
+
             if (moveForwardOne or moveForwardTwo) {
                 return true;
             }
